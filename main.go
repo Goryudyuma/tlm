@@ -274,5 +274,5 @@ func main() {
 		rapi.POST("/getusers", getusers)
 	}
 
-	r.Run()
+	r.Run(":" + config.Port)
 }

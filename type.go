@@ -5,4 +5,5 @@ type Config struct {
 	ConsumerSecret string `yaml:"ConsumerSecret"`
 	SeedString     string `yaml:"SeedString"`
 	URL            string `yaml:"URL"`
+	Port           string `yaml:"Port"`
 }
