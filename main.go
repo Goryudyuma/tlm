@@ -10,7 +10,6 @@ import (
 	q "github.com/Goryudyuma/tlm/lib/Query"
 
 	"github.com/bgpat/twtr"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/garyburd/go-oauth/oauth"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -65,7 +64,7 @@ func login(c *gin.Context) {
 		c.Redirect(301, "/")
 	}
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
-	url, err := clientmain.RequestTokenURL(config.CallbackURL)
+	url, err := clientmain.RequestTokenURL(config.URL + "/callback")
 	if err != nil {
 		c.HTML(500, err.Error(), nil)
 	}
@@ -91,7 +90,6 @@ func callback(c *gin.Context) {
 	}
 
 	//spew.Dump(clientmain.GetLists(url.Values{}))
-	spew.Dump(clientmain)
 	session.Set("OauthToken", clientmain.AccessToken.Token)
 	session.Set("OauthTokenSecret", clientmain.AccessToken.Secret)
 	session.Save()
@@ -128,7 +126,6 @@ func createclient(c *gin.Context) (*twtr.Client, error) {
 func query(c *gin.Context) {
 
 	querystring := c.PostForm("query")
-	spew.Dump(querystring)
 	if querystring == "" {
 		c.JSON(500, gin.H{"status": "error", "data": "Query parameters are missing."})
 		return

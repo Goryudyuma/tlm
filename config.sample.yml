@@ -1,4 +1,4 @@
 ConsumerKey: your_consumer_key
 ConsumerSecret: your_consumer_secret
 SeedString: random_string
-CallbackURL: "http://localhost:8080"
+URL: "http://localhost:8080"
