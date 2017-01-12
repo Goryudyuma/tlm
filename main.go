@@ -52,23 +52,23 @@ func checklogin(c *gin.Context) bool {
 func getroot(c *gin.Context) {
 	if !checklogin(c) {
 		c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
-		c.Redirect(301, "/login")
+		c.Redirect(303, "/login")
 	} else {
-		c.Redirect(301, "/test/main.html")
+		c.Redirect(303, "/test/main.html")
 		//c.HTML(http.StatusOK, "index.html", gin.H{})
 	}
 }
 
 func login(c *gin.Context) {
 	if checklogin(c) {
-		c.Redirect(301, "/")
+		c.Redirect(303, "/")
 	}
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	url, err := clientmain.RequestTokenURL(config.URL + "/callback")
 	if err != nil {
 		c.HTML(500, err.Error(), nil)
 	}
-	c.Redirect(301, url)
+	c.Redirect(303, url)
 }
 
 func logout(c *gin.Context) {
@@ -76,7 +76,7 @@ func logout(c *gin.Context) {
 	session.Clear()
 	session.Save()
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
-	c.Redirect(301, "/")
+	c.Redirect(303, "/")
 }
 
 func callback(c *gin.Context) {
@@ -95,7 +95,7 @@ func callback(c *gin.Context) {
 	session.Save()
 
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
-	c.Redirect(301, "/")
+	c.Redirect(303, "/")
 }
 
 func createclient(c *gin.Context) (*twtr.Client, error) {
