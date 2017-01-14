@@ -15,6 +15,7 @@ func min(a, b int) int {
 }
 
 func (change Changes) Commit(client *twtr.Client) error {
+	var err error
 	for id, v := range change {
 		i := 0
 		for {
@@ -37,14 +38,20 @@ func (change Changes) Commit(client *twtr.Client) error {
 			for _, one := range handled {
 				list = append(list, strconv.FormatInt(int64(one), 10))
 			}
-			v.DelList = v.DelList[min(100, len(v.DelList)):]
-			_, err := client.DeleteListMembers(&twtr.Values{
-				"list_id": strconv.FormatInt(int64(id), 10),
-				"user_id": strings.Join(list[:], ","),
-			})
+			count := 0
+			for count < 10 {
+				_, err := client.DeleteListMembers(&twtr.Values{
+					"list_id": strconv.FormatInt(int64(id), 10),
+					"user_id": strings.Join(list[:], ","),
+				})
+				if err == nil {
+					break
+				}
+			}
 			if err != nil {
 				return err
 			}
+			v.DelList = v.DelList[min(100, len(v.DelList)):]
 		}
 		for len(v.AddList) != 0 {
 			list := make([]string, 0, 100)
@@ -52,14 +59,20 @@ func (change Changes) Commit(client *twtr.Client) error {
 			for _, one := range handled {
 				list = append(list, strconv.FormatInt(int64(one), 10))
 			}
-			v.AddList = v.AddList[min(100, len(v.AddList)):]
-			_, err := client.AddListMembers(&twtr.Values{
-				"list_id": strconv.FormatInt(int64(id), 10),
-				"user_id": strings.Join(list[:], ","),
-			})
+			count := 0
+			for count < 10 {
+				_, err := client.AddListMembers(&twtr.Values{
+					"list_id": strconv.FormatInt(int64(id), 10),
+					"user_id": strings.Join(list[:], ","),
+				})
+				if err == nil {
+					break
+				}
+			}
 			if err != nil {
 				return err
 			}
+			v.AddList = v.AddList[min(100, len(v.AddList)):]
 		}
 	}
 	return nil
