@@ -54,7 +54,7 @@ func getroot(c *gin.Context) {
 		c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 		c.Redirect(303, "/login")
 	} else {
-		c.Redirect(303, "/test/main.html")
+		c.Redirect(303, "/static/main.html")
 		//c.HTML(http.StatusOK, "index.html", gin.H{})
 	}
 }
@@ -247,6 +247,34 @@ func getusers(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok", "data": ret})
 }
 
+func test(c *gin.Context) {
+	db, err := sql.Open("mysql", "test:@/test")
+	if err != nil {
+		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+		return
+	}
+	rows, err := db.Query("SELECT * FROM test")
+	defer rows.Close()
+
+	if err != nil {
+		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+		return
+	}
+
+	var ret [][]int
+
+	for rows.Next() {
+		var A, B, C int
+		if err := rows.Scan(&A, &B, &C); err != nil {
+			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+			return
+		}
+		ret = append(ret, []int{A, B, C})
+	}
+
+	c.JSON(200, gin.H{"status": "ok", "data": ret})
+}
+
 func main() {
 	config = loadyaml()
 	consumer := oauth.Credentials{Token: config.ConsumerKey, Secret: config.ConsumerSecret}
@@ -264,7 +292,9 @@ func main() {
 	r.GET("/login", login)
 	r.GET("/logout", logout)
 	r.GET("/callback", callback)
-	r.Static("/test", "./content")
+	r.Static("/static", "./content")
+
+	r.GET("/test", test)
 
 	rapi := r.Group("/api")
 	{
