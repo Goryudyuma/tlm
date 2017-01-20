@@ -24,7 +24,7 @@ type CheckLoginType struct {
 }
 
 func (db database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
-	stmt, err := db.Client.Prepare("SELECT token FROM user WHERE id = ? AND owner = 1 AND lastlogin > NOW()")
+	stmt, err := db.Client.Prepare("SELECT token FROM user WHERE id = ? AND id = parent AND lastlogin > NOW()")
 	if err != nil {
 		panic(err.Error())
 	}
