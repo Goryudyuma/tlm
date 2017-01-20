@@ -19,7 +19,8 @@ func (db database) New(username, password, dbname string) error {
 
 type CheckLoginType struct {
 	UserID user.UserID
-	Exit   chan string
+	token  string
+	Exit   chan bool
 	Err    chan error
 }
 
@@ -37,7 +38,7 @@ func (db database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
 				if err := stmt.QueryRow(CheckLogin.UserID).Scan(&ret); err != nil {
 					CheckLogin.Err <- err
 				}
-				CheckLogin.Exit <- ret
+				CheckLogin.Exit <- (ret == CheckLogin.token)
 			}
 		case <-exit:
 			{
