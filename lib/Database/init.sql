@@ -4,17 +4,18 @@ CREATE TABLE IF NOT EXISTS account (
 	token VARCHAR(255),
 	accesstoken VARCHAR(255),
 	accesstokensecret VARCHAR(255),
-	lastlogin DATETIME,
-	createdAt DATETIME,
+	expiration DATETIME NOT NULL,
+	createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(id),
 	INDEX(parent)
 );
 
 CREATE TABLE IF NOT EXISTS query (
-	id INTEGER NOT NULL,
+	id INTEGER NOT NULL AUTO_INCREMENT,
 	accountid INTEGER NOT NULL,
 	query LONGTEXT NOT NULL,
 	failcount INTEGER NOT NULL DEFAULT 0,
+	PRIMARY KEY(id),
 	INDEX(failcount),
 	FOREIGN KEY (accountid) REFERENCES account(id)
 );
