@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS account (
 	id INTEGER NOT NULL AUTO_INCREMENT,
-	parent INTEGER NOT NULL,
+	parentid INTEGER NOT NULL,
 	token VARCHAR(255),
 	accesstoken VARCHAR(255),
 	accesstokensecret VARCHAR(255),

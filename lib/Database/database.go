@@ -28,21 +28,21 @@ type CheckLoginType struct {
 }
 
 func (db database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
-	stmt, err := db.Client.Prepare("SELECT token FROM account WHERE id = ? AND parent = 0 AND expiration > NOW()")
+	stmt, err := db.Client.Prepare("SELECT token FROM account WHERE id = ? AND parentid = 0 AND expiration > NOW()")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer stmt.Close()
 	for {
 		select {
-		case CheckLogin := <-u:
+		case CheckLoginValue := <-u:
 			{
 				var ret string
-				if err := stmt.QueryRow(CheckLogin.UserID).Scan(&ret); err != nil {
-					CheckLogin.Err <- err
+				if err := stmt.QueryRow(CheckLoginValue.UserID).Scan(&ret); err != nil {
+					CheckLoginValue.Err <- err
 					continue
 				}
-				CheckLogin.Exit <- (ret == CheckLogin.token)
+				CheckLoginValue.Exit <- (ret == CheckLoginValue.token)
 			}
 		case <-exit:
 			{
@@ -80,28 +80,63 @@ func (db database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 	token := createToken()
 	stmt, err := db.Client.Prepare(`
 		INSERT INTO account 
-			(parent, token, accesstoken, accesstokensecret, expiration)
+			(parentid, token, accesstoken, accesstokensecret, expiration)
 		VALUES
-			(0, ?, ?, ?, NOW() + INTERVAL 1 DAY)`)
+			(0, ?, ?, ?, NOW() + INTERVAL 1 DAY);`)
 	if err != nil {
 		panic(err)
 	}
 	defer stmt.Close()
 	for {
 		select {
-		case CreateUser := <-u:
+		case CreateUserValue := <-u:
 			{
-				res, err := stmt.Exec(token, CreateUser.AccessToken, CreateUser.AccessTokenSecret)
+				res, err := stmt.Exec(token, CreateUserValue.AccessToken, CreateUserValue.AccessTokenSecret)
 				if err != nil {
-					CreateUser.Err <- err
+					CreateUserValue.Err <- err
 					continue
 				}
 				id, err := res.LastInsertId()
 				if err != nil {
-					CreateUser.Err <- err
+					CreateUserValue.Err <- err
 					continue
 				}
-				CreateUser.Exit <- UserToken{UserID: user.UserID(id), Token: token}
+				CreateUserValue.Exit <- UserToken{UserID: user.UserID(id), Token: token}
+			}
+		case <-exit:
+			{
+				break
+			}
+		}
+	}
+}
+
+type AddChildUserType struct {
+	ParentID          user.UserID
+	AccessToken       string
+	AccessTokenSecret string
+	Exit              chan bool
+	Err               chan error
+}
+
+func (db database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
+	stmt, err := db.Client.Prepare(`
+		INSERT INTO account (parentid, accesstoken, accesstokensecret)
+		VALUES (?, ?, ?);
+	`)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		select {
+		case AddChildUserValue := <-u:
+			{
+				_, err = stmt.Exec(AddChildUserValue.ParentID, AddChildUserValue.AccessToken, AddChildUserValue.AccessTokenSecret)
+				if err != nil {
+					AddChildUserValue.Err <- err
+					continue
+				}
+				AddChildUserValue.Exit <- true
 			}
 		case <-exit:
 			{
