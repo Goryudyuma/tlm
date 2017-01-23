@@ -58,6 +58,7 @@ type UserToken struct {
 }
 
 type CreateUserType struct {
+	UserID            user.UserID
 	AccessToken       string
 	AccessTokenSecret string
 	Exit              chan UserToken
@@ -80,9 +81,9 @@ func (db database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 	token := createToken()
 	stmt, err := db.Client.Prepare(`
 		INSERT INTO account 
-			(parentid, token, accesstoken, accesstokensecret, expiration)
+			(parentid,userid, token, accesstoken, accesstokensecret, expiration)
 		VALUES
-			(0, ?, ?, ?, NOW() + INTERVAL 1 DAY);`)
+			(0, ?, ?, ?, ?, NOW() + INTERVAL 1 DAY);`)
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +92,7 @@ func (db database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 		select {
 		case CreateUserValue := <-u:
 			{
-				res, err := stmt.Exec(token, CreateUserValue.AccessToken, CreateUserValue.AccessTokenSecret)
+				res, err := stmt.Exec(token, CreateUserValue.UserID, CreateUserValue.AccessToken, CreateUserValue.AccessTokenSecret)
 				if err != nil {
 					CreateUserValue.Err <- err
 					continue
@@ -112,7 +113,8 @@ func (db database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 }
 
 type AddChildUserType struct {
-	ParentID          user.UserID
+	ParentID          int
+	UserID            user.UserID
 	AccessToken       string
 	AccessTokenSecret string
 	Exit              chan bool
@@ -121,8 +123,8 @@ type AddChildUserType struct {
 
 func (db database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
 	stmt, err := db.Client.Prepare(`
-		INSERT INTO account (parentid, accesstoken, accesstokensecret)
-		VALUES (?, ?, ?);
+		INSERT INTO account (parentid, userid, accesstoken, accesstokensecret)
+		VALUES (?, ?, ?, ?);
 	`)
 	if err != nil {
 		panic(err)
@@ -131,7 +133,7 @@ func (db database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
 		select {
 		case AddChildUserValue := <-u:
 			{
-				_, err = stmt.Exec(AddChildUserValue.ParentID, AddChildUserValue.AccessToken, AddChildUserValue.AccessTokenSecret)
+				_, err = stmt.Exec(AddChildUserValue.ParentID, AddChildUserValue.UserID, AddChildUserValue.AccessToken, AddChildUserValue.AccessTokenSecret)
 				if err != nil {
 					AddChildUserValue.Err <- err
 					continue

@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS account (
 	id INTEGER NOT NULL AUTO_INCREMENT,
 	parentid INTEGER NOT NULL,
 	token VARCHAR(255),
+	userid BIGINTEGER,
 	accesstoken VARCHAR(255),
 	accesstokensecret VARCHAR(255),
 	expiration DATETIME NOT NULL,
