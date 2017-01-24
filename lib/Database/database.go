@@ -53,7 +53,7 @@ func (db database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
 }
 
 type UserToken struct {
-	UserID user.UserID
+	UserID int64
 	Token  string
 }
 
@@ -102,7 +102,7 @@ func (db database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 					CreateUserValue.Err <- err
 					continue
 				}
-				CreateUserValue.Exit <- UserToken{UserID: user.UserID(id), Token: token}
+				CreateUserValue.Exit <- UserToken{UserID: id, Token: token}
 			}
 		case <-exit:
 			{
@@ -143,6 +143,50 @@ func (db database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
 		case <-exit:
 			{
 				break
+			}
+		}
+	}
+}
+
+type LoginType struct {
+	AccessToken       string
+	AccessTokenSecret string
+	Exit              chan UserToken
+	Err               chan error
+}
+
+func (db database) Login(u <-chan LoginType, exit <-chan bool) {
+	stmt, err := db.Client.Prepare(`
+		SELECT id FROM account WHERE accesstoken = ? AND accesstokensecret = ?;
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	stmtin, err := db.Client.Prepare(`
+		UPDATE account SET token = ?, expiration = NOW() + INTERVAL 1 DAY WHERE id = ?;
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		select {
+		case LoginValue := <-u:
+			{
+				var ret int64
+				if err := stmt.QueryRow(LoginValue.AccessToken, LoginValue.AccessTokenSecret).Scan(&ret); err != nil {
+					LoginValue.Err <- err
+					continue
+				}
+				token := createToken()
+				if _, err := stmtin.Exec(token, ret); err != nil {
+					LoginValue.Err <- err
+					continue
+				}
+				LoginValue.Exit <- UserToken{
+					UserID: ret,
+					Token:  token}
 			}
 		}
 	}
