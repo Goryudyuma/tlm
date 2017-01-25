@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/Goryudyuma/tlm/lib/Query"
 	"github.com/Goryudyuma/tlm/lib/User"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -162,6 +163,7 @@ func (db database) Login(u <-chan LoginType, exit <-chan bool) {
 	if err != nil {
 		panic(err)
 	}
+	defer stmt.Close()
 
 	stmtin, err := db.Client.Prepare(`
 		UPDATE account SET token = ?, expiration = NOW() + INTERVAL 1 DAY WHERE id = ?;
@@ -169,6 +171,7 @@ func (db database) Login(u <-chan LoginType, exit <-chan bool) {
 	if err != nil {
 		panic(err)
 	}
+	defer stmtin.Close()
 
 	for {
 		select {
@@ -187,6 +190,40 @@ func (db database) Login(u <-chan LoginType, exit <-chan bool) {
 				LoginValue.Exit <- UserToken{
 					UserID: ret,
 					Token:  token}
+			}
+		}
+	}
+}
+
+type RegisterQueryType struct {
+	userid int64
+	query  query.Query
+	Exit   chan bool
+	Err    chan error
+}
+
+func (db database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
+	stmt, err := db.Client.Prepare(`
+		INSERT INTO query (accountid, query, failcount) VALUES (?, ?, 0);
+	`)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+
+	for {
+		select {
+		case RegisterQueryValue := <-u:
+			{
+				if _, err := stmt.Exec(RegisterQueryValue.userid, RegisterQueryValue.query); err != nil {
+					RegisterQueryValue.Err <- err
+					continue
+				}
+				RegisterQueryValue.Exit <- true
+			}
+		case <-exit:
+			{
+				break
 			}
 		}
 	}
