@@ -197,7 +197,7 @@ func (db database) Login(u <-chan LoginType, exit <-chan bool) {
 
 type RegisterQueryType struct {
 	userid int64
-	query  query.Query
+	query  query.JsonQuery
 	Exit   chan bool
 	Err    chan error
 }
@@ -220,6 +220,51 @@ func (db database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
 					continue
 				}
 				RegisterQueryValue.Exit <- true
+			}
+		case <-exit:
+			{
+				break
+			}
+		}
+	}
+}
+
+type QueryAllType struct {
+	userid int64
+	Exit   chan []query.JsonQuery
+	Err    chan error
+}
+
+func (db database) QueryAll(u <-chan QueryAllType, exit <-chan bool) {
+	stmt, err := db.Client.Prepare(`
+		SELECT query FROM query WHERE userid = ?;
+	`)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+	for {
+		select {
+		case QueryAllValue := <-u:
+			{
+				rows, err := stmt.Query(QueryAllValue)
+				if err != nil {
+					QueryAllValue.Err <- err
+					continue
+				}
+				ret := make([]query.JsonQuery, 0)
+				for rows.Next() {
+					var one query.JsonQuery
+					err = rows.Scan(&one)
+					if err != nil {
+						QueryAllValue.Err <- err
+						break
+					}
+					ret = append(ret, one)
+				}
+				if err == nil {
+					QueryAllValue.Exit <- ret
+				}
 			}
 		case <-exit:
 			{
