@@ -24,8 +24,8 @@ func (db database) New(username, password, dbname string) error {
 type CheckLoginType struct {
 	UserID user.UserID
 	token  string
-	Exit   chan bool
-	Err    chan error
+	Exit   chan<- bool
+	Err    chan<- error
 }
 
 func (db database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
@@ -62,8 +62,8 @@ type CreateUserType struct {
 	UserID            user.UserID
 	AccessToken       string
 	AccessTokenSecret string
-	Exit              chan UserToken
-	Err               chan error
+	Exit              chan<- UserToken
+	Err               chan<- error
 }
 
 func createToken() string {
@@ -118,8 +118,8 @@ type AddChildUserType struct {
 	UserID            user.UserID
 	AccessToken       string
 	AccessTokenSecret string
-	Exit              chan bool
-	Err               chan error
+	Exit              chan<- bool
+	Err               chan<- error
 }
 
 func (db database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
@@ -152,8 +152,8 @@ func (db database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
 type LoginType struct {
 	AccessToken       string
 	AccessTokenSecret string
-	Exit              chan UserToken
-	Err               chan error
+	Exit              chan<- UserToken
+	Err               chan<- error
 }
 
 func (db database) Login(u <-chan LoginType, exit <-chan bool) {
@@ -198,8 +198,8 @@ func (db database) Login(u <-chan LoginType, exit <-chan bool) {
 type RegisterQueryType struct {
 	userid int64
 	query  query.JsonQuery
-	Exit   chan bool
-	Err    chan error
+	Exit   chan<- bool
+	Err    chan<- error
 }
 
 func (db database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
@@ -231,8 +231,8 @@ func (db database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
 
 type QueryAllType struct {
 	userid int64
-	Exit   chan []query.JsonQuery
-	Err    chan error
+	Exit   chan<- []query.JsonQuery
+	Err    chan<- error
 }
 
 func (db database) QueryAll(u <-chan QueryAllType, exit <-chan bool) {
