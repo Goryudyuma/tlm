@@ -12,13 +12,51 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func (db database) New(username, password, dbname string) error {
+type dbclients struct {
+	CheckLoginInput    chan<- CheckLoginType
+	CreateUserInput    chan<- CreateUserType
+	AddChildUserInput  chan<- AddChildUserType
+	LoginInput         chan<- LoginType
+	RegisterQueryInput chan<- RegisterQueryType
+	QueryAllInput      chan<- QueryAllType
+}
+
+func (db database) New(username, password, dbname string) (dbclients, chan<- bool, error) {
 	dbclient, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, dbname))
 	if err != nil {
-		return err
+		return dbclients{}, nil, err
 	}
 	db.Client = dbclient
-	return nil
+
+	exit := make(chan bool)
+
+	var ret dbclients
+
+	CheckLoginTypeChan := make(chan CheckLoginType, 10)
+	ret.CheckLoginInput = CheckLoginTypeChan
+	go db.CheckLogin(CheckLoginTypeChan, exit)
+
+	CreateUserTypeChan := make(chan CreateUserType, 10)
+	ret.CreateUserInput = CreateUserTypeChan
+	go db.CreateUser(CreateUserTypeChan, exit)
+
+	AddChildUserTypeChan := make(chan AddChildUserType, 10)
+	ret.AddChildUserInput = AddChildUserTypeChan
+	go db.AddChildUser(AddChildUserTypeChan, exit)
+
+	LoginTypeChan := make(chan LoginType, 10)
+	ret.LoginInput = LoginTypeChan
+	go db.Login(LoginTypeChan, exit)
+
+	RegisterQueryTypeChan := make(chan RegisterQueryType, 10)
+	ret.RegisterQueryInput = RegisterQueryTypeChan
+	go db.RegisterQuery(RegisterQueryTypeChan, exit)
+
+	QueryAllTypeChan := make(chan QueryAllType, 10)
+	ret.QueryAllInput = QueryAllTypeChan
+	go db.QueryAll(QueryAllTypeChan, exit)
+
+	return ret, exit, nil
 }
 
 type CheckLoginType struct {
