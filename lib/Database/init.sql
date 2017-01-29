@@ -2,13 +2,13 @@ CREATE TABLE IF NOT EXISTS account (
 	id INTEGER NOT NULL AUTO_INCREMENT,
 	parentid INTEGER NOT NULL,
 	token VARCHAR(255),
-	userid BIGINTEGER,
+	userid BIGINT,
 	accesstoken VARCHAR(255),
 	accesstokensecret VARCHAR(255),
 	expiration DATETIME NOT NULL,
 	createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(id),
-	INDEX(parent)
+	INDEX(parentid)
 );
 
 CREATE TABLE IF NOT EXISTS query (

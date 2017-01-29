@@ -6,6 +6,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type database struct {
+type Database struct {
 	Client *sql.DB
 }

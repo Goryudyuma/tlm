@@ -2,11 +2,13 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	//	"sync"
 
+	"github.com/Goryudyuma/tlm/lib/Database"
 	q "github.com/Goryudyuma/tlm/lib/Query"
 
 	"github.com/bgpat/twtr"
@@ -19,6 +21,7 @@ import (
 var (
 	config     Config
 	clientmain *twtr.Client
+	dbclients  database.DBClients
 )
 
 func loadconfig() []byte {
@@ -279,6 +282,15 @@ func main() {
 	config = loadyaml()
 	consumer := oauth.Credentials{Token: config.ConsumerKey, Secret: config.ConsumerSecret}
 	clientmain = twtr.NewClient(&consumer, nil)
+
+	var database database.Database
+	var err error
+
+	dbclients, err = database.NewDBClients("test", "", "test")
+
+	if err != nil {
+		panic(err)
+	}
 
 	_ = clientmain
 	r := gin.Default()

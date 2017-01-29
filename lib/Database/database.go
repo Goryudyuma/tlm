@@ -12,25 +12,28 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type dbclients struct {
+type DBClients struct {
 	CheckLoginInput    chan<- CheckLoginType
 	CreateUserInput    chan<- CreateUserType
 	AddChildUserInput  chan<- AddChildUserType
 	LoginInput         chan<- LoginType
 	RegisterQueryInput chan<- RegisterQueryType
 	QueryAllInput      chan<- QueryAllType
+	Exit               chan<- bool
 }
 
-func (db database) New(username, password, dbname string) (dbclients, chan<- bool, error) {
+func (db Database) NewDBClients(username, password, dbname string) (DBClients, error) {
+
 	dbclient, err := sql.Open("mysql", fmt.Sprintf("%s:%s@/%s", username, password, dbname))
 	if err != nil {
-		return dbclients{}, nil, err
+		return DBClients{}, err
 	}
 	db.Client = dbclient
 
-	exit := make(chan bool)
+	var ret DBClients
 
-	var ret dbclients
+	exit := make(chan bool)
+	ret.Exit = exit
 
 	CheckLoginTypeChan := make(chan CheckLoginType, 10)
 	ret.CheckLoginInput = CheckLoginTypeChan
@@ -56,7 +59,7 @@ func (db database) New(username, password, dbname string) (dbclients, chan<- boo
 	ret.QueryAllInput = QueryAllTypeChan
 	go db.QueryAll(QueryAllTypeChan, exit)
 
-	return ret, exit, nil
+	return ret, nil
 }
 
 type CheckLoginType struct {
@@ -66,7 +69,7 @@ type CheckLoginType struct {
 	Err    chan<- error
 }
 
-func (db database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
+func (db Database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
 	stmt, err := db.Client.Prepare("SELECT token FROM account WHERE id = ? AND parentid = 0 AND expiration > NOW()")
 	if err != nil {
 		panic(err.Error())
@@ -116,7 +119,7 @@ func createToken() string {
 	return string(n)
 }
 
-func (db database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
+func (db Database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 	token := createToken()
 	stmt, err := db.Client.Prepare(`
 		INSERT INTO account 
@@ -160,7 +163,7 @@ type AddChildUserType struct {
 	Err               chan<- error
 }
 
-func (db database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
+func (db Database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
 	stmt, err := db.Client.Prepare(`
 		INSERT INTO account (parentid, userid, accesstoken, accesstokensecret)
 		VALUES (?, ?, ?, ?);
@@ -194,7 +197,7 @@ type LoginType struct {
 	Err               chan<- error
 }
 
-func (db database) Login(u <-chan LoginType, exit <-chan bool) {
+func (db Database) Login(u <-chan LoginType, exit <-chan bool) {
 	stmt, err := db.Client.Prepare(`
 		SELECT id FROM account WHERE accesstoken = ? AND accesstokensecret = ?;
 	`)
@@ -240,7 +243,7 @@ type RegisterQueryType struct {
 	Err    chan<- error
 }
 
-func (db database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
+func (db Database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
 	stmt, err := db.Client.Prepare(`
 		INSERT INTO query (accountid, query, failcount) VALUES (?, ?, 0);
 	`)
@@ -268,14 +271,14 @@ func (db database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
 }
 
 type QueryAllType struct {
-	userid int64
-	Exit   chan<- []query.JsonQuery
-	Err    chan<- error
+	accountid int64
+	Exit      chan<- []query.JsonQuery
+	Err       chan<- error
 }
 
-func (db database) QueryAll(u <-chan QueryAllType, exit <-chan bool) {
+func (db Database) QueryAll(u <-chan QueryAllType, exit <-chan bool) {
 	stmt, err := db.Client.Prepare(`
-		SELECT query FROM query WHERE userid = ?;
+		SELECT query FROM query WHERE accountid = ?;
 	`)
 	if err != nil {
 		panic(err)
@@ -285,7 +288,7 @@ func (db database) QueryAll(u <-chan QueryAllType, exit <-chan bool) {
 		select {
 		case QueryAllValue := <-u:
 			{
-				rows, err := stmt.Query(QueryAllValue)
+				rows, err := stmt.Query(QueryAllValue.accountid)
 				if err != nil {
 					QueryAllValue.Err <- err
 					continue
