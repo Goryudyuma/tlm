@@ -63,8 +63,8 @@ func (db Database) NewDBClients(username, password, dbname string) (DBClients, e
 }
 
 type CheckLoginType struct {
-	UserID user.UserID
-	token  string
+	UserID int64
+	Token  string
 	Exit   chan<- bool
 	Err    chan<- error
 }
@@ -84,7 +84,7 @@ func (db Database) CheckLogin(u <-chan CheckLoginType, exit <-chan bool) {
 					CheckLoginValue.Err <- err
 					continue
 				}
-				CheckLoginValue.Exit <- (ret == CheckLoginValue.token)
+				CheckLoginValue.Exit <- (ret == CheckLoginValue.Token)
 			}
 		case <-exit:
 			{
@@ -123,7 +123,7 @@ func (db Database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 	token := createToken()
 	stmt, err := db.Client.Prepare(`
 		INSERT INTO account 
-			(parentid,userid, token, accesstoken, accesstokensecret, expiration)
+			(parentid, userid, token, accesstoken, accesstokensecret, expiration)
 		VALUES
 			(0, ?, ?, ?, ?, NOW() + INTERVAL 1 DAY);`)
 	if err != nil {
@@ -134,7 +134,7 @@ func (db Database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 		select {
 		case CreateUserValue := <-u:
 			{
-				res, err := stmt.Exec(token, CreateUserValue.UserID, CreateUserValue.AccessToken, CreateUserValue.AccessTokenSecret)
+				res, err := stmt.Exec(CreateUserValue.UserID, token, CreateUserValue.AccessToken, CreateUserValue.AccessTokenSecret)
 				if err != nil {
 					CreateUserValue.Err <- err
 					continue
@@ -155,7 +155,7 @@ func (db Database) CreateUser(u <-chan CreateUserType, exit <-chan bool) {
 }
 
 type AddChildUserType struct {
-	ParentID          int
+	ParentID          int64
 	UserID            user.UserID
 	AccessToken       string
 	AccessTokenSecret string
@@ -165,8 +165,8 @@ type AddChildUserType struct {
 
 func (db Database) AddChildUser(u <-chan AddChildUserType, exit <-chan bool) {
 	stmt, err := db.Client.Prepare(`
-		INSERT INTO account (parentid, userid, accesstoken, accesstokensecret)
-		VALUES (?, ?, ?, ?);
+		INSERT INTO account (parentid, userid, accesstoken, accesstokensecret, expiration)
+		VALUES (?, ?, ?, ?, NOW());
 	`)
 	if err != nil {
 		panic(err)

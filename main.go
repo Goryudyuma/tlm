@@ -10,6 +10,7 @@ import (
 
 	"github.com/Goryudyuma/tlm/lib/Database"
 	q "github.com/Goryudyuma/tlm/lib/Query"
+	u "github.com/Goryudyuma/tlm/lib/User"
 
 	"github.com/bgpat/twtr"
 	"github.com/garyburd/go-oauth/oauth"
@@ -44,12 +45,34 @@ func loadyaml() Config {
 
 func checklogin(c *gin.Context) bool {
 	session := sessions.Default(c)
-	OauthToken := session.Get("OauthToken")
-	OauthTokenSecret := session.Get("OauthTokenSecret")
-	if OauthToken == nil || OauthTokenSecret == nil {
+
+	userid := session.Get("UserID")
+	token := session.Get("Token")
+
+	if userid == nil || token == nil {
 		return false
 	}
-	return true
+
+	exit := make(chan bool)
+	err := make(chan error)
+	dbclients.CheckLoginInput <- database.CheckLoginType{
+		UserID: userid.(int64),
+		Token:  token.(string),
+		Exit:   exit,
+		Err:    err,
+	}
+
+	select {
+	case v := <-exit:
+		{
+			return v
+		}
+	case <-err:
+		{
+			return false
+		}
+	}
+	return false
 }
 
 func getroot(c *gin.Context) {
@@ -63,9 +86,9 @@ func getroot(c *gin.Context) {
 }
 
 func login(c *gin.Context) {
-	if checklogin(c) {
-		c.Redirect(303, "/")
-	}
+	//if checklogin(c) {
+	//c.Redirect(303, "/")
+	//}
 	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	url, err := clientmain.RequestTokenURL(config.URL + "/callback")
 	if err != nil {
@@ -87,21 +110,98 @@ func callback(c *gin.Context) {
 	err := clientmain.GetAccessToken(c.Query("oauth_verifier"))
 
 	if err != nil {
-
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
 	}
 
-	//spew.Dump(clientmain.GetLists(url.Values{}))
-	session.Set("OauthToken", clientmain.AccessToken.Token)
-	session.Set("OauthTokenSecret", clientmain.AccessToken.Secret)
-	session.Save()
+	userid := session.Get("UserID")
+	token := session.Get("Token")
 
-	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	if userid == nil || token == nil || !checklogin(c) {
+		exit := make(chan database.UserToken)
+		reterr := make(chan error)
+
+		client, err := createclient(clientmain.AccessToken.Token, clientmain.AccessToken.Secret)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+			return
+		}
+		user, err := client.GetMyProfile(nil)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+			return
+		}
+
+		dbclients.CreateUserInput <- database.CreateUserType{
+			UserID:            u.UserID(user.ID.ID),
+			AccessToken:       clientmain.AccessToken.Token,
+			AccessTokenSecret: clientmain.AccessToken.Secret,
+			Exit:              exit,
+			Err:               reterr,
+		}
+		select {
+		case v := <-exit:
+			{
+				session.Set("UserID", v.UserID)
+				session.Set("Token", v.Token)
+				session.Save()
+			}
+		case err = <-reterr:
+			{
+				c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+				return
+			}
+		}
+	} else {
+
+		client, err := createclient(clientmain.AccessToken.Token, clientmain.AccessToken.Secret)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+			return
+		}
+		user, err := client.GetMyProfile(nil)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+			return
+		}
+
+		exit := make(chan bool)
+		reterr := make(chan error)
+
+		dbclients.AddChildUserInput <- database.AddChildUserType{
+			ParentID:          userid.(int64),
+			UserID:            u.UserID(user.ID.ID),
+			AccessToken:       clientmain.AccessToken.Token,
+			AccessTokenSecret: clientmain.AccessToken.Secret,
+			Exit:              exit,
+			Err:               reterr,
+		}
+		select {
+		case <-exit:
+			{
+
+			}
+		case err = <-reterr:
+			{
+				c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+				return
+			}
+		}
+
+	}
+
+	//c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Redirect(303, "/")
 }
 
-func createclient(c *gin.Context) (*twtr.Client, error) {
+func createclient(accesstoken, accesstokensecret string) (*twtr.Client, error) {
+	consumer := oauth.Credentials{Token: config.ConsumerKey, Secret: config.ConsumerSecret}
+	token := oauth.Credentials{Token: accesstoken, Secret: accesstokensecret}
+
+	return twtr.NewClient(&consumer, &token), nil
+}
+
+func createclientparse(c *gin.Context) (*twtr.Client, error) {
 	if !checklogin(c) {
 		return nil, errors.New("Not login")
 	}
@@ -120,10 +220,7 @@ func createclient(c *gin.Context) (*twtr.Client, error) {
 		return nil, errors.New("Not login")
 	}
 
-	consumer := oauth.Credentials{Token: config.ConsumerKey, Secret: config.ConsumerSecret}
-	token := oauth.Credentials{Token: OauthToken, Secret: OauthTokenSecret}
-
-	return twtr.NewClient(&consumer, &token), nil
+	return createclient(OauthToken, OauthTokenSecret)
 }
 
 func query(c *gin.Context) {
@@ -140,7 +237,7 @@ func query(c *gin.Context) {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
 	}
-	client, err := createclient(c)
+	client, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
@@ -158,7 +255,7 @@ func query(c *gin.Context) {
 }
 
 func searchuser(c *gin.Context) {
-	client, err := createclient(c)
+	client, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
@@ -190,7 +287,7 @@ func searchuser(c *gin.Context) {
 }
 
 func userlist(c *gin.Context) {
-	client, err := createclient(c)
+	client, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
@@ -220,7 +317,7 @@ func userlist(c *gin.Context) {
 }
 
 func getusers(c *gin.Context) {
-	client, err := createclient(c)
+	client, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
