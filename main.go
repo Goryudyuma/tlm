@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"strconv"
 
 	"github.com/Goryudyuma/tlm/lib/Database"
 	q "github.com/Goryudyuma/tlm/lib/Query"
@@ -194,26 +195,44 @@ func createclient(accesstoken, accesstokensecret string) (*twtr.Client, error) {
 	return twtr.NewClient(&consumer, &token), nil
 }
 
-func createclientparse(c *gin.Context) (*twtr.Client, error) {
+func createclientparse(c *gin.Context) (map[u.UserID]*twtr.Client, error) {
 	if !checklogin(c) {
 		return nil, errors.New("Not login")
 	}
 
 	session := sessions.Default(c)
 
-	var OauthToken, OauthTokenSecret string
-	if session.Get("OauthToken") != nil {
-		OauthToken = session.Get("OauthToken").(string)
-	} else {
-		return nil, errors.New("Not login")
-	}
-	if session.Get("OauthTokenSecret") != nil {
-		OauthTokenSecret = session.Get("OauthTokenSecret").(string)
-	} else {
-		return nil, errors.New("Not login")
+	userid := session.Get("UserID").(int64)
+	token := session.Get("Token").(string)
+	exit := make(chan map[u.UserID]database.TokenSecretType)
+	reterr := make(chan error)
+
+	dbclients.GetTokenSecretInput <- database.GetTokenSecretType{
+		Id:    userid,
+		Token: token,
+		Exit:  exit,
+		Err:   reterr,
 	}
 
-	return createclient(OauthToken, OauthTokenSecret)
+	ret := make(map[u.UserID]*twtr.Client)
+	select {
+	case v := <-exit:
+		{
+			for userid, one := range v {
+				var err error
+				ret[userid], err = createclient(one.AccessToken, one.AccessTokenSecret)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	case v := <-reterr:
+		{
+			return nil, v
+		}
+	}
+
+	return ret, nil
 }
 
 func query(c *gin.Context) {
@@ -248,11 +267,12 @@ func query(c *gin.Context) {
 }
 
 func searchuser(c *gin.Context) {
-	client, err := createclientparse(c)
+	clients, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
 	}
+	client := clients[u.UserID(0)]
 
 	username := c.PostForm("username")
 
@@ -280,7 +300,7 @@ func searchuser(c *gin.Context) {
 }
 
 func userlist(c *gin.Context) {
-	client, err := createclientparse(c)
+	clients, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
@@ -290,6 +310,16 @@ func userlist(c *gin.Context) {
 	if userid == "" {
 		c.JSON(500, gin.H{"status": "error", "data": "Query parameters are missing."})
 		return
+	}
+
+	useridint64, err := strconv.ParseInt(userid, 10, 64)
+	if err != nil {
+		c.JSON(500, gin.H{"status": "error", "data": "Query parameters are missing."})
+		return
+	}
+	client, ok := clients[u.UserID(useridint64)]
+	if !ok {
+		client = clients[u.UserID(0)]
 	}
 
 	lists, err := client.GetLists(&twtr.Values{
@@ -310,7 +340,7 @@ func userlist(c *gin.Context) {
 }
 
 func getusers(c *gin.Context) {
-	client, err := createclientparse(c)
+	clients, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
@@ -321,6 +351,8 @@ func getusers(c *gin.Context) {
 		c.JSON(500, gin.H{"status": "error", "data": "Query parameters are missing."})
 		return
 	}
+
+	client := clients[u.UserID(0)]
 
 	users, err := client.GetUsers(&twtr.Values{
 		"user_id": userids,

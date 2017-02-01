@@ -1,6 +1,8 @@
 package list
 
 import (
+	"strconv"
+
 	"github.com/Goryudyuma/tlm/lib/Tag"
 	"github.com/Goryudyuma/tlm/lib/User"
 )
@@ -18,13 +20,15 @@ type List struct {
 }
 
 func (l *List) New(j JsonList) {
-	(*l).OwnerID.New(j.OwnerID)
-	(*l).ListID.New(j.ListID)
+	ownerid, _ := strconv.ParseInt(j.OwnerID, 10, 64)
+	(*l).OwnerID.New(ownerid)
+	listid, _ := strconv.ParseInt(j.ListID, 10, 64)
+	(*l).ListID.New(listid)
 	(*l).Tag.New(j.Tag)
 }
 
 type JsonList struct {
-	OwnerID int64  `json:"ownerid"`
-	ListID  int64  `json:"listid"`
+	OwnerID string `json:"ownerid"`
+	ListID  string `json:"listid"`
 	Tag     string `json:"tag"`
 }

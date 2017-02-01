@@ -1,6 +1,8 @@
 package adlib
 
 import (
+	"strconv"
+
 	"github.com/Goryudyuma/tlm/lib/List"
 	"github.com/Goryudyuma/tlm/lib/User"
 )
@@ -22,10 +24,15 @@ type Adlib struct {
 
 func (a *Adlib) New(j JsonAdlib) {
 	(*a).List.New(j.List)
-	(*a).UserIDs.New(j.UserIDs)
+	ret := make([]int64, len(j.UserIDs))
+	for _, v := range j.UserIDs {
+		one, _ := strconv.ParseInt(v, 10, 64)
+		ret = append(ret, one)
+	}
+	(*a).UserIDs.New(ret)
 }
 
 type JsonAdlib struct {
 	List    list.JsonList `json:"list"`
-	UserIDs []int64       `json:"userids"`
+	UserIDs []string      `json:"userids"`
 }

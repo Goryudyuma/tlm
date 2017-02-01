@@ -439,13 +439,16 @@
 					this.update();
 				}
 			}.bind(this));
+			console.log(this.listlist)
 		}.bind(this);
 		
 		changelistid(obj) {
 			if(opts.oneanother==="one"){
-				RiotControl.trigger('query_change_jobs_job_listone_listid', opts.index, Number(obj.target.value))
+				RiotControl.trigger('query_change_jobs_job_listone_listid', opts.index, obj.target.value)
 			} else if(opts.oneanother==="another"){
-				RiotControl.trigger('query_change_jobs_job_listanother_listid', opts.index, Number(obj.target.value))
+				RiotControl.trigger('query_change_jobs_job_listanother_listid', opts.index, obj.target.value)
+			} else {
+				opts.changelistid(obj.target.value)
 			}
 		}
 	</script>

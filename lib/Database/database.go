@@ -321,7 +321,6 @@ func (db Database) QueryAll(u <-chan QueryAllType, exit <-chan bool) {
 }
 
 type TokenSecretType struct {
-	UserID            user.UserID
 	AccessToken       string
 	AccessTokenSecret string
 }
@@ -329,7 +328,7 @@ type TokenSecretType struct {
 type GetTokenSecretType struct {
 	Id    int64
 	Token string
-	Exit  chan<- []TokenSecretType
+	Exit  chan<- map[user.UserID]TokenSecretType
 	Err   chan<- error
 }
 
@@ -343,24 +342,37 @@ func (db Database) GetTokenSecret(u <-chan GetTokenSecretType, exit <-chan bool)
 		panic(err)
 	}
 	defer stmt.Close()
+
+	stmt2, err := db.Client.Prepare(`
+		SELECT userid, accesstoken, accesstokensecret FROM account WHERE parentid = 0 AND id = ? AND token = ? AND expiration > NOW()
+	`)
 	for {
 		select {
 		case GetTokenSecretValue := <-u:
 			{
-				var ret []TokenSecretType
+				ret := make(map[user.UserID]TokenSecretType)
 				rows, err := stmt.Query(GetTokenSecretValue.Id, GetTokenSecretValue.Token)
+				var one TokenSecretType
+				var userid user.UserID
 				for rows.Next() {
-					var one TokenSecretType
-					err = rows.Scan(&one.UserID, &one.AccessToken, &one.AccessTokenSecret)
+					err = rows.Scan(&userid, &one.AccessToken, &one.AccessTokenSecret)
 					if err != nil {
 						GetTokenSecretValue.Err <- err
 						break
 					}
-					ret = append(ret, one)
+					ret[userid] = one
 				}
+
 				if err == nil {
+					err := stmt2.QueryRow(GetTokenSecretValue.Id, GetTokenSecretValue.Token).Scan(&userid, &one.AccessToken, &one.AccessTokenSecret)
+					if err != nil {
+						GetTokenSecretValue.Err <- err
+						continue
+					}
+					ret[user.UserID(0)] = one
 					GetTokenSecretValue.Exit <- ret
 				}
+
 			}
 		case <-exit:
 			{

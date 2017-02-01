@@ -10,7 +10,7 @@ import (
 	"github.com/bgpat/twtr"
 )
 
-func (v Job) dojob(client *twtr.Client, result, origin *map[list.List]user.UserIDs,
+func (v Job) dojob(clients map[user.UserID]*twtr.Client, result, origin *map[list.List]user.UserIDs,
 	ret *map[list.ListID]change.Change, listids *map[list.List]list.ListID) error {
 	l1 := (*result)[v.ListOne]
 	l2 := (*result)[v.ListAnother]
@@ -40,6 +40,7 @@ func (v Job) dojob(client *twtr.Client, result, origin *map[list.List]user.UserI
 					mode = "private"
 				}
 
+				client := clients[user.UserID(0)]
 				createlist, err := client.CreateList(&twtr.Values{
 					"name": v.Config.Name,
 					"mode": mode,
@@ -57,7 +58,7 @@ func (v Job) dojob(client *twtr.Client, result, origin *map[list.List]user.UserI
 	return nil
 }
 
-func (jobs Jobs) Task(client *twtr.Client, origin map[list.List]user.UserIDs) (
+func (jobs Jobs) Task(clients map[user.UserID]*twtr.Client, origin map[list.List]user.UserIDs) (
 	change.Changes, error) {
 	listids := make(map[list.List]list.ListID)
 	ret := make(map[list.ListID]change.Change)
@@ -68,35 +69,47 @@ func (jobs Jobs) Task(client *twtr.Client, origin map[list.List]user.UserIDs) (
 	}
 
 	for _, v := range jobs {
-		v.dojob(client, &result, &origin, &ret, &listids)
+		v.dojob(clients, &result, &origin, &ret, &listids)
 	}
 	return ret, nil
 }
 
-func (job Job) GetListMember(client *twtr.Client, ret *map[list.List]user.UserIDs, chanerr chan error, mutex *sync.Mutex) {
+func (job Job) GetListMember(clients map[user.UserID]*twtr.Client, ret *map[list.List]user.UserIDs, chanerr chan error, mutex *sync.Mutex) {
 	if _, ok := (*ret)[job.ListOne]; !ok {
+		client, ok := clients[job.ListOne.OwnerID]
+		if !ok {
+			client = clients[user.UserID(0)]
+		}
 		go job.ListOne.GetListMembers(client, chanerr, ret, mutex)
 	} else {
 		chanerr <- nil
 	}
 	if _, ok := (*ret)[job.ListAnother]; !ok {
+		client, ok := clients[job.ListAnother.OwnerID]
+		if !ok {
+			client = clients[user.UserID(0)]
+		}
 		go job.ListAnother.GetListMembers(client, chanerr, ret, mutex)
 	} else {
 		chanerr <- nil
 	}
 	if _, ok := (*ret)[job.ListResult]; !ok {
+		client, ok := clients[job.ListResult.OwnerID]
+		if !ok {
+			client = clients[user.UserID(0)]
+		}
 		go job.ListResult.GetListMembers(client, chanerr, ret, mutex)
 	} else {
 		chanerr <- nil
 	}
 }
 
-func (j Jobs) Getalllist(client *twtr.Client, ret *map[list.List]user.UserIDs) (map[list.List]user.UserIDs, error) {
+func (j Jobs) Getalllist(clients map[user.UserID]*twtr.Client, ret *map[list.List]user.UserIDs) (map[list.List]user.UserIDs, error) {
 	var mutex sync.Mutex
 	chanerr := make(chan error, len(j)*3+1)
 	defer close(chanerr)
 	for _, v := range j {
-		v.GetListMember(client, ret, chanerr, &mutex)
+		v.GetListMember(clients, ret, chanerr, &mutex)
 	}
 
 	var err error

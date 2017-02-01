@@ -1,6 +1,8 @@
 package follower
 
 import (
+	"strconv"
+
 	"github.com/Goryudyuma/tlm/lib/List"
 	"github.com/Goryudyuma/tlm/lib/User"
 )
@@ -22,10 +24,11 @@ type Follower struct {
 
 func (f *Follower) New(j JsonFollower) {
 	(*f).List.New(j.List)
-	(*f).UserID.New(j.UserID)
+	userid, _ := strconv.ParseInt(j.UserID, 10, 64)
+	(*f).UserID.New(userid)
 }
 
 type JsonFollower struct {
 	List   list.JsonList `json:"list"`
-	UserID int64         `json:"userid"`
+	UserID string        `json:"userid"`
 }

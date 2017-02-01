@@ -3,6 +3,7 @@ package change
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bgpat/twtr"
 )
@@ -28,6 +29,7 @@ func (change Changes) Commit(client *twtr.Client) error {
 				if i > 5 {
 					return err
 				}
+				time.Sleep(1 * time.Second)
 			} else {
 				break
 			}
