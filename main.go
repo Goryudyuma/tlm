@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	//	"sync"
 
 	"github.com/Goryudyuma/tlm/lib/Database"
 	q "github.com/Goryudyuma/tlm/lib/Query"
@@ -117,23 +116,18 @@ func callback(c *gin.Context) {
 	userid := session.Get("UserID")
 	token := session.Get("Token")
 
+	myid, err := getmyid(clientmain.AccessToken.Token, clientmain.AccessToken.Secret)
+	if err != nil {
+		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+		return
+	}
+
 	if userid == nil || token == nil || !checklogin(c) {
 		exit := make(chan database.UserToken)
 		reterr := make(chan error)
 
-		client, err := createclient(clientmain.AccessToken.Token, clientmain.AccessToken.Secret)
-		if err != nil {
-			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
-			return
-		}
-		user, err := client.GetMyProfile(nil)
-		if err != nil {
-			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
-			return
-		}
-
 		dbclients.CreateUserInput <- database.CreateUserType{
-			UserID:            u.UserID(user.ID.ID),
+			UserID:            myid,
 			AccessToken:       clientmain.AccessToken.Token,
 			AccessTokenSecret: clientmain.AccessToken.Secret,
 			Exit:              exit,
@@ -153,24 +147,12 @@ func callback(c *gin.Context) {
 			}
 		}
 	} else {
-
-		client, err := createclient(clientmain.AccessToken.Token, clientmain.AccessToken.Secret)
-		if err != nil {
-			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
-			return
-		}
-		user, err := client.GetMyProfile(nil)
-		if err != nil {
-			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
-			return
-		}
-
 		exit := make(chan bool)
 		reterr := make(chan error)
 
 		dbclients.AddChildUserInput <- database.AddChildUserType{
 			ParentID:          userid.(int64),
-			UserID:            u.UserID(user.ID.ID),
+			UserID:            myid,
 			AccessToken:       clientmain.AccessToken.Token,
 			AccessTokenSecret: clientmain.AccessToken.Secret,
 			Exit:              exit,
@@ -190,8 +172,19 @@ func callback(c *gin.Context) {
 
 	}
 
-	//c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Redirect(303, "/")
+}
+
+func getmyid(Token, Secret string) (u.UserID, error) {
+	client, err := createclient(Token, Secret)
+	if err != nil {
+		return u.UserID(0), err
+	}
+	user, err := client.GetMyProfile(nil)
+	if err != nil {
+		return u.UserID(0), err
+	}
+	return u.UserID(user.ID.ID), nil
 }
 
 func createclient(accesstoken, accesstokensecret string) (*twtr.Client, error) {

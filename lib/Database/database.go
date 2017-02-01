@@ -13,13 +13,14 @@ import (
 )
 
 type DBClients struct {
-	CheckLoginInput    chan<- CheckLoginType
-	CreateUserInput    chan<- CreateUserType
-	AddChildUserInput  chan<- AddChildUserType
-	LoginInput         chan<- LoginType
-	RegisterQueryInput chan<- RegisterQueryType
-	QueryAllInput      chan<- QueryAllType
-	Exit               chan<- bool
+	CheckLoginInput     chan<- CheckLoginType
+	CreateUserInput     chan<- CreateUserType
+	AddChildUserInput   chan<- AddChildUserType
+	LoginInput          chan<- LoginType
+	RegisterQueryInput  chan<- RegisterQueryType
+	QueryAllInput       chan<- QueryAllType
+	GetTokenSecretInput chan<- GetTokenSecretType
+	Exit                chan<- bool
 }
 
 func (db Database) NewDBClients(username, password, dbname string) (DBClients, error) {
@@ -58,6 +59,10 @@ func (db Database) NewDBClients(username, password, dbname string) (DBClients, e
 	QueryAllTypeChan := make(chan QueryAllType, 10)
 	ret.QueryAllInput = QueryAllTypeChan
 	go db.QueryAll(QueryAllTypeChan, exit)
+
+	GetTokenSecretTypeChan := make(chan GetTokenSecretType, 10)
+	ret.GetTokenSecretInput = GetTokenSecretTypeChan
+	go db.GetTokenSecret(GetTokenSecretTypeChan, exit)
 
 	return ret, nil
 }
@@ -305,6 +310,56 @@ func (db Database) QueryAll(u <-chan QueryAllType, exit <-chan bool) {
 				}
 				if err == nil {
 					QueryAllValue.Exit <- ret
+				}
+			}
+		case <-exit:
+			{
+				break
+			}
+		}
+	}
+}
+
+type TokenSecretType struct {
+	UserID            user.UserID
+	AccessToken       string
+	AccessTokenSecret string
+}
+
+type GetTokenSecretType struct {
+	Id    int64
+	Token string
+	Exit  chan<- []TokenSecretType
+	Err   chan<- error
+}
+
+func (db Database) GetTokenSecret(u <-chan GetTokenSecretType, exit <-chan bool) {
+	stmt, err := db.Client.Prepare(`
+		SELECT userid, accesstoken, accesstokensecret FROM account WHERE parentid = (
+			SELECT id FROM account WHERE id = ? AND token = ? AND expiration > NOW()
+		);
+	`)
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+	for {
+		select {
+		case GetTokenSecretValue := <-u:
+			{
+				var ret []TokenSecretType
+				rows, err := stmt.Query(GetTokenSecretValue.Id, GetTokenSecretValue.Token)
+				for rows.Next() {
+					var one TokenSecretType
+					err = rows.Scan(&one.UserID, &one.AccessToken, &one.AccessTokenSecret)
+					if err != nil {
+						GetTokenSecretValue.Err <- err
+						break
+					}
+					ret = append(ret, one)
+				}
+				if err == nil {
+					GetTokenSecretValue.Exit <- ret
 				}
 			}
 		case <-exit:
