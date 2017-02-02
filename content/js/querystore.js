@@ -120,7 +120,6 @@ function QueryStore() {
 	})
 	
 	self.on('query_change_jobs_job_UpdateSave', (index, list_id)=>{
-		console.log(list_id)
 		self.query.jobs[index].listresult.listid=list_id
 		self.query.jobs[index].listresult.tag=""
 		self.query.jobs[index].config.name=""

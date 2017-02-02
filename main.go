@@ -181,7 +181,7 @@ func getmyid(Token, Secret string) (u.UserID, error) {
 	if err != nil {
 		return u.UserID(0), err
 	}
-	user, err := client.GetMyProfile(nil)
+	user, err := client.VerifyCredentials(nil)
 	if err != nil {
 		return u.UserID(0), err
 	}
