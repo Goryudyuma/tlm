@@ -22,7 +22,7 @@ func (listid ListID) Getlist(client *twtr.Client) (user.UserIDs, error) {
 		log.Println(err)
 		return nil, err
 	}
-	ret := make(user.UserIDs, len(data.Users))
+	ret := make(user.UserIDs, 0, len(data.Users))
 
 	for _, v := range data.Users {
 		ret = append(ret, user.UserID(v.ID.ID))
