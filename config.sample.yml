@@ -3,3 +3,6 @@ ConsumerSecret: your_consumer_secret
 SeedString: random_string
 URL: http://localhost:8080
 Port: 8000
+DBUser: test
+DBPass: 
+DBName: test 

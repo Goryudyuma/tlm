@@ -408,7 +408,7 @@ func main() {
 	var database database.Database
 	var err error
 
-	dbclients, err = database.NewDBClients("test", "", "test")
+	dbclients, err = database.NewDBClients(config.DBUser, config.DBPass, config.DBName)
 
 	if err != nil {
 		panic(err)
