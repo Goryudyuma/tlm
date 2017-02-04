@@ -9,12 +9,15 @@ import (
 
 type Adlibs []Adlib
 
-func (a *Adlibs) New(j []JsonAdlib) {
+func (a *Adlibs) New(j []JsonAdlib) error {
 	for _, v := range j {
 		var one Adlib
-		one.New(v)
+		if err := one.New(v); err != nil {
+			return err
+		}
 		*a = append(*a, one)
 	}
+	return nil
 }
 
 type Adlib struct {
@@ -22,14 +25,22 @@ type Adlib struct {
 	UserIDs user.UserIDs
 }
 
-func (a *Adlib) New(j JsonAdlib) {
-	(*a).List.New(j.List)
+func (a *Adlib) New(j JsonAdlib) error {
+	if err := (*a).List.New(j.List); err != nil {
+		return err
+	}
 	ret := make([]int64, len(j.UserIDs))
 	for _, v := range j.UserIDs {
-		one, _ := strconv.ParseInt(v, 10, 64)
+		one, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return err
+		}
 		ret = append(ret, one)
 	}
-	(*a).UserIDs.New(ret)
+	if err := (*a).UserIDs.New(ret); err != nil {
+		return err
+	}
+	return nil
 }
 
 type JsonAdlib struct {

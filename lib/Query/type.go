@@ -11,10 +11,16 @@ type Query struct {
 	regularflag bool
 }
 
-func (query *Query) New(j JsonQuery) {
-	(*query).preparation.New(j.Preparation)
-	(*query).jobs.New(j.Jobs)
+func (query *Query) New(j JsonQuery) error {
+	if err := (*query).preparation.New(j.Preparation); err != nil {
+		return err
+	}
+	if err := (*query).jobs.New(j.Jobs); err != nil {
+		return err
+	}
 	(*query).regularflag = j.Regularflag
+
+	return nil
 }
 
 type JsonQuery struct {

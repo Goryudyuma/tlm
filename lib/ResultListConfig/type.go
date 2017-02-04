@@ -6,10 +6,11 @@ type ResultListConfig struct {
 	Saveflag   bool
 }
 
-func (r *ResultListConfig) New(j JsonResultListConfig) {
+func (r *ResultListConfig) New(j JsonResultListConfig) error {
 	(*r).Name = j.Name
 	(*r).Publicflag = j.Publicflag
 	(*r).Saveflag = j.Saveflag
+	return nil
 }
 
 type JsonResultListConfig struct {

@@ -10,9 +10,14 @@ type Preparation struct {
 	Follower follower.Followers
 }
 
-func (p *Preparation) New(j JsonPreparation) {
-	(*p).Adlib.New(j.Adlib)
-	(*p).Follower.New(j.Follower)
+func (p *Preparation) New(j JsonPreparation) error {
+	if err := (*p).Adlib.New(j.Adlib); err != nil {
+		return err
+	}
+	if err := (*p).Follower.New(j.Follower); err != nil {
+		return err
+	}
+	return nil
 }
 
 type JsonPreparation struct {

@@ -256,7 +256,11 @@ func query(c *gin.Context) {
 	}
 
 	var queryone q.Query
-	queryone.New(jsonquery)
+	err = queryone.New(jsonquery)
+	if err != nil {
+		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+		return
+	}
 	err = queryone.Querytask(client)
 
 	if err != nil {

@@ -7,12 +7,15 @@ import (
 
 type Jobs []Job
 
-func (j *Jobs) New(json []JsonJob) {
+func (j *Jobs) New(json []JsonJob) error {
 	for _, v := range json {
 		var one Job
-		one.New(v)
+		if err := one.New(v); err != nil {
+			return err
+		}
 		*j = append(*j, one)
 	}
+	return nil
 }
 
 type Job struct {
@@ -23,12 +26,21 @@ type Job struct {
 	Config      resultlistconfig.ResultListConfig
 }
 
-func (j *Job) New(json JsonJob) {
+func (j *Job) New(json JsonJob) error {
 	(*j).Operator = json.Operator
-	(*j).ListOne.New(json.ListOne)
-	(*j).ListAnother.New(json.ListAnother)
-	(*j).ListResult.New(json.ListResult)
-	(*j).Config.New(json.Config)
+	if err := (*j).ListOne.New(json.ListOne); err != nil {
+		return err
+	}
+	if err := (*j).ListAnother.New(json.ListAnother); err != nil {
+		return err
+	}
+	if err := (*j).ListResult.New(json.ListResult); err != nil {
+		return err
+	}
+	if err := (*j).Config.New(json.Config); err != nil {
+		return err
+	}
+	return nil
 }
 
 type JsonJob struct {

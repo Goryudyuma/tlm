@@ -12,9 +12,14 @@ type Change struct {
 	DelList user.UserIDs
 }
 
-func (c *Change) New(j JsonChange) {
-	(*c).AddList.New(j.AddList)
-	(*c).DelList.New(j.DelList)
+func (c *Change) New(j JsonChange) error {
+	if err := (*c).AddList.New(j.AddList); err != nil {
+		return err
+	}
+	if err := (*c).DelList.New(j.DelList); err != nil {
+		return err
+	}
+	return nil
 }
 
 type JsonChange struct {

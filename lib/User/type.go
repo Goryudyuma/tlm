@@ -2,12 +2,15 @@ package user
 
 type UserIDs []UserID
 
-func (u *UserIDs) New(i []int64) {
+func (u *UserIDs) New(i []int64) error {
 	for _, v := range i {
 		var one UserID
-		one.New(v)
+		if err := one.New(v); err != nil {
+			return err
+		}
 		*u = append(*u, one)
 	}
+	return nil
 }
 
 func (u UserIDs) Len() int {
@@ -24,6 +27,7 @@ func (u UserIDs) Less(i, j int) bool {
 
 type UserID int64
 
-func (u *UserID) New(i int64) {
+func (u *UserID) New(i int64) error {
 	*u = UserID(i)
+	return nil
 }

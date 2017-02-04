@@ -9,8 +9,9 @@ import (
 
 type ListID int64
 
-func (l *ListID) New(j int64) {
+func (l *ListID) New(j int64) error {
 	*l = ListID(j)
+	return nil
 }
 
 type List struct {
@@ -19,12 +20,25 @@ type List struct {
 	Tag     tag.Tag
 }
 
-func (l *List) New(j JsonList) {
-	ownerid, _ := strconv.ParseInt(j.OwnerID, 10, 64)
-	(*l).OwnerID.New(ownerid)
-	listid, _ := strconv.ParseInt(j.ListID, 10, 64)
-	(*l).ListID.New(listid)
-	(*l).Tag.New(j.Tag)
+func (l *List) New(j JsonList) error {
+	ownerid, err := strconv.ParseInt(j.OwnerID, 10, 64)
+	if err != nil {
+		return err
+	}
+	if err := (*l).OwnerID.New(ownerid); err != nil {
+		return err
+	}
+	listid, err := strconv.ParseInt(j.ListID, 10, 64)
+	if err != nil {
+		return err
+	}
+	if err := (*l).ListID.New(listid); err != nil {
+		return err
+	}
+	if err := (*l).Tag.New(j.Tag); err != nil {
+		return err
+	}
+	return nil
 }
 
 type JsonList struct {
