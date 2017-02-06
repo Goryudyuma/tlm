@@ -267,6 +267,33 @@ func query(c *gin.Context) {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
 	}
+
+	if jsonquery.Regularflag {
+		myuser, err := client[0].VerifyCredentials(nil)
+		if err != nil {
+			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+			return
+		}
+		exit := make(chan bool)
+		reterr := make(chan error)
+		dbclients.RegisterQueryInput <- database.RegisterQueryType{
+			UserID: myuser.ID.ID,
+			Query:  querystring,
+			Exit:   exit,
+			Err:    reterr,
+		}
+		select {
+		case <-exit:
+			{
+			}
+		case err := <-reterr:
+			{
+				c.JSON(500, gin.H{"status": "error", "data": err.Error()})
+				return
+			}
+		}
+	}
+
 	c.JSON(200, gin.H{"status": "ok", "data": ""})
 }
 

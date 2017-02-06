@@ -242,8 +242,8 @@ func (db Database) Login(u <-chan LoginType, exit <-chan bool) {
 }
 
 type RegisterQueryType struct {
-	userid int64
-	query  query.JsonQuery
+	UserID int64
+	Query  string
 	Exit   chan<- bool
 	Err    chan<- error
 }
@@ -261,7 +261,7 @@ func (db Database) RegisterQuery(u <-chan RegisterQueryType, exit <-chan bool) {
 		select {
 		case RegisterQueryValue := <-u:
 			{
-				if _, err := stmt.Exec(RegisterQueryValue.userid, RegisterQueryValue.query); err != nil {
+				if _, err := stmt.Exec(RegisterQueryValue.UserID, RegisterQueryValue.Query); err != nil {
 					RegisterQueryValue.Err <- err
 					continue
 				}
