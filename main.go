@@ -249,6 +249,7 @@ func query(c *gin.Context) {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 		return
 	}
+
 	client, err := createclientparse(c)
 	if err != nil {
 		c.JSON(500, gin.H{"status": "error", "data": err.Error()})

@@ -7,6 +7,9 @@ import (
 
 func (q Query) Querytask(clients map[user.UserID]*twtr.Client) error {
 	preparearr, err := q.preparation.Prepare(clients)
+	if err != nil {
+		return err
+	}
 
 	listarr, err := q.jobs.Getalllist(clients, &preparearr)
 	if err != nil {

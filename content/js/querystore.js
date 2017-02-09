@@ -56,7 +56,7 @@ function QueryStore() {
 	})
 	
 	self.on('query_del_follower', (index)=>{
-		self.query.preparation.adlib.splice(index, 1)
+		self.query.preparation.follower.splice(index, 1)
 		self.trigger('follower_changed', self.query.preparation.follower)
 	})
 	

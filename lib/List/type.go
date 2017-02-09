@@ -23,7 +23,7 @@ type List struct {
 func (l *List) New(j JsonList) error {
 	ownerid, err := strconv.ParseInt(j.OwnerID, 10, 64)
 	if err != nil {
-		return err
+		ownerid = 0
 	}
 	if err := (*l).OwnerID.New(ownerid); err != nil {
 		return err

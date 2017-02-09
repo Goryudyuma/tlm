@@ -49,11 +49,14 @@ func (change Changes) Commit(client *twtr.Client) error {
 				if err == nil {
 					break
 				}
+				count++
+				time.Sleep(1 * time.Second)
 			}
 			if err != nil {
 				return err
 			}
 			v.DelList = v.DelList[min(100, len(v.DelList)):]
+			time.Sleep(10 * time.Second)
 		}
 		for len(v.AddList) != 0 {
 			list := make([]string, 0, 100)
@@ -70,11 +73,14 @@ func (change Changes) Commit(client *twtr.Client) error {
 				if err == nil {
 					break
 				}
+				count++
+				time.Sleep(1 * time.Second)
 			}
 			if err != nil {
 				return err
 			}
 			v.AddList = v.AddList[min(100, len(v.AddList)):]
+			time.Sleep(10 * time.Second)
 		}
 	}
 	return nil
