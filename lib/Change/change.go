@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bgpat/twtr"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func min(a, b int) int {
@@ -55,6 +56,7 @@ func (change Changes) Commit(client *twtr.Client) error {
 			if err != nil {
 				return err
 			}
+			spew.Dump(len(v.DelList))
 			v.DelList = v.DelList[min(100, len(v.DelList)):]
 			time.Sleep(10 * time.Second)
 		}
@@ -79,6 +81,7 @@ func (change Changes) Commit(client *twtr.Client) error {
 			if err != nil {
 				return err
 			}
+			spew.Dump(len(v.AddList))
 			v.AddList = v.AddList[min(100, len(v.AddList)):]
 			time.Sleep(10 * time.Second)
 		}

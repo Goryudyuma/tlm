@@ -71,7 +71,7 @@
 		{showscreenname(i)}
 	</span>
 	<br />
-	screenname:<input onBlur={fetch_user_lists} />
+	screenname:@<input onBlur={fetch_user_lists} />
 	<form style="display: inline" onsubmit={ addmember }>
 		<select id="select" class="list-select" >
 			<option each={selectlist} value={this[1]}>{this[0]}</option>
@@ -176,7 +176,7 @@
 	{opts.data.list.tag}<br />
 		{this.showscreenname(opts.data.userid)}
 	<br />
-	screenname:<input onBlur={fetch_user_lists} />
+	screenname:@<input onBlur={fetch_user_lists} />
 	<form style="display: inline" onsubmit={ change }>
 		<select id="select" class="list-select" >
 			<option each={selectlist} value={this[1]}>{this[0]}</option>
@@ -406,7 +406,7 @@
 </joblistresult>
 
 <selectlist>
-	screenname:<input id="screenname" onBlur={fetch_user_lists}>
+	screenname:@<input id="screenname" onBlur={fetch_user_lists}>
 	<select id="select" class="list-select" onBlur={fetch_lists}>
 		<option each={selectlist} value={this[1]}>{this[0]}</option>
 	</select>
