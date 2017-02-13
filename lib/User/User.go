@@ -1,8 +1,12 @@
 package user
 
+import "sort"
+
 func (one UserIDs) Intersect(another UserIDs) UserIDs {
 	var ret UserIDs
 	i, j := 0, 0
+	sort.Sort(one)
+	sort.Sort(another)
 	for i < len(one) && j < len(another) {
 		if one[i] == another[j] {
 			ret = append(ret, one[i])
@@ -14,12 +18,16 @@ func (one UserIDs) Intersect(another UserIDs) UserIDs {
 			j++
 		}
 	}
+
+	sort.Sort(ret)
 	return ret
 }
 
 func (one UserIDs) Union(another UserIDs) UserIDs {
 	var ret UserIDs
 	i, j := 0, 0
+	sort.Sort(one)
+	sort.Sort(another)
 	for i < len(one) && j < len(another) {
 		if one[i] == another[j] {
 			ret = append(ret, one[i])
@@ -36,12 +44,15 @@ func (one UserIDs) Union(another UserIDs) UserIDs {
 	ret = append(ret, one[i:]...)
 	ret = append(ret, another[j:]...)
 
+	sort.Sort(ret)
 	return ret
 }
 
 func (one UserIDs) Except(another UserIDs) UserIDs {
 	var ret UserIDs
 	i, j := 0, 0
+	sort.Sort(one)
+	sort.Sort(another)
 	for i < len(one) && j < len(another) {
 		if one[i] == another[j] {
 			i++
@@ -54,5 +65,6 @@ func (one UserIDs) Except(another UserIDs) UserIDs {
 		}
 	}
 	ret = append(ret, one[i:]...)
+	sort.Sort(ret)
 	return ret
 }
