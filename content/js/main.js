@@ -25,7 +25,7 @@
 		}
 
 		adlibpatch(input) {
-			query.preparation.adlib=input;
+			query.preparation.adlib=input
 			this.update()
 		}
 		
@@ -49,14 +49,24 @@
 
 		self.adlibs=[]
 		
+		self.tagstring=[]
+		
 		RiotControl.on('adlib_changed', (adlibs)=>{
 			self.adlibs = adlibs
 			self.update()
 		})
+		
+		RiotControl.on('tagstring_changed', (tagstring)=>{
+			self.tagstring = tagstring
+			self.update()
+		})
 
 		add(e) {
-			RiotControl.trigger('query_add_adlib', e.target[0].value)
-			return e.preventDefault();
+			if(e.target[0].value!=="" && self.tagstring.indexOf(e.target[0].value) === -1){
+				RiotControl.trigger('query_tagstring_add', e.target[0].value)
+				RiotControl.trigger('query_add_adlib', e.target[0].value)
+			}
+			return e.preventDefault()
 		}
 
 		
@@ -83,10 +93,11 @@
 	<script>
 		var self = this
 	
-		selectlist=[];
+		selectlist=[]
 
 
 		remove() {
+			RiotControl.trigger('query_tagstring_del', opts.data.list.tag)
 			RiotControl.trigger('query_del_adlib', opts.index)
 		}
 
@@ -94,7 +105,7 @@
 			if(e.target[0].value){
 				RiotControl.trigger('query_add_adlib_user', opts.index, e.target[0].value)
 			}
-			return 	e.preventDefault();
+			return 	e.preventDefault()
 		}
 
 		delmember(e) {
@@ -102,17 +113,17 @@
 		}
 
 		fetch_user_lists(obj){
-			screen_name = obj.srcElement.value;
+			screen_name = obj.srcElement.value
 			$.post("/api/searchuser",{username:screen_name},function(result){
 				if(result.status==="ok"){
-					this.selectlist = result.data;
+					this.selectlist = result.data
 					for(i in result.data) {
 						RiotControl.trigger('userIdscreenNameMap_change', result.data[i][1], result.data[i][0])
 					}
-					this.update();
+					this.update()
 				}
-			}.bind(this));
-		}.bind(this);
+			}.bind(this))
+		}.bind(this)
 		
 		self.screenNameIdMap={}
 
@@ -123,17 +134,17 @@
 
 		showscreenname(userID) {
 			if (userID in self.screenNameIdMap ) {
-				return self.screenNameIdMap[userID];
+				return self.screenNameIdMap[userID]
 			} else {
-				screenNameIdMap[userID]="";
+				screenNameIdMap[userID]=""
 				$.post("/api/getusers",{userids:userID},function(result){
 					if(result.status==="ok"){
 						RiotControl.trigger('userIdscreenNameMap_change', result.data[0][1], result.data[0][0])
 					} else {
-						delete screenNameIdMap[userID];
+						delete screenNameIdMap[userID]
 					}
 				}).done(this.update).fail(()=>{
-					delete screenNameIdMap[userID];
+					delete screenNameIdMap[userID]
 				})
 			}
 		}
@@ -157,14 +168,24 @@
 
 		self.follower=[]
 		
+		self.tagstring=[]
+		
 		RiotControl.on('follower_changed', (follower)=>{
 			self.follower = follower
 			self.update()
 		})
+		
+		RiotControl.on('tagstring_changed', (tagstring)=>{
+			self.tagstring = tagstring
+			self.update()
+		})
 
 		add(e) {
-			RiotControl.trigger('query_add_follower', e.target[0].value)
-			return e.preventDefault();
+			if(e.target[0].value!=="" && self.tagstring.indexOf(e.target[0].value) === -1){
+				RiotControl.trigger('query_tagstring_add', e.target[0].value)
+				RiotControl.trigger('query_add_follower', e.target[0].value)
+			}
+			return e.preventDefault()
 		}
 
 		
@@ -188,34 +209,33 @@
 	<script>
 		var self = this
 	
-		selectlist=[];
+		selectlist=[]
 
 
 		remove() {
+			RiotControl.trigger('query_tagstring_del', opts.data.list.tag)
 			RiotControl.trigger('query_del_follower', opts.index)
 		}
 
 		change(e) {
-			
-		console.log(opts.data)
 			if(e.target[0].value){
 				RiotControl.trigger('query_change_follower', opts.index, e.target[0].value)
 			}
-			return 	e.preventDefault();
+			return 	e.preventDefault()
 		}
 
 		fetch_user_lists(obj){
-			screen_name = obj.srcElement.value;
+			screen_name = obj.srcElement.value
 			$.post("/api/searchuser",{username:screen_name},function(result){
 				if(result.status==="ok"){
-					this.selectlist = result.data;
+					this.selectlist = result.data
 					for(i in result.data) {
 						RiotControl.trigger('userIdscreenNameMap_change', result.data[i][1], result.data[i][0])
 					}
-					this.update();
+					this.update()
 				}
-			}.bind(this));
-		}.bind(this);
+			}.bind(this))
+		}.bind(this)
 		
 		self.screenNameIdMap={}
 
@@ -225,19 +245,19 @@
 		})
 
 		showscreenname(userID) {
-			if (userID===0)return "";
+			if (userID===0)return ""
 			if (userID in self.screenNameIdMap ) {
-				return self.screenNameIdMap[userID];
+				return self.screenNameIdMap[userID]
 			} else {
-				self.screenNameIdMap[userID]="";
+				self.screenNameIdMap[userID]=""
 				$.post("/api/getusers",{userids:[userID]},function(result){
 					if(result.status==="ok"){
 						RiotControl.trigger('userIdscreenNameMap_change', result.data[0][1], result.data[0][0])
 					} else {
-						delete self.screenNameIdMap[userID];
+						delete self.screenNameIdMap[userID]
 					}
 				}).done(this.update).fail(()=>{
-					delete self.screenNameIdMap[userID];
+					delete self.screenNameIdMap[userID]
 				})
 			}
 		}
@@ -271,11 +291,11 @@
 	
 		add(e){
 			RiotControl.trigger('query_add_jobs')
-			return e.preventDefault();
+			return e.preventDefault()
 		}
 		
 		registerlistname(listID, listName){
-			listidname[listID]=listName;
+			listidname[listID]=listName
 		}
 	</script>
 </jobs>
@@ -317,7 +337,7 @@
 	</select>
 	</form>
 	
-	<input if={this.type === "Tag"} onchange={ tagnamechange } name="test" value={opts.data.tag}>
+	<tagstringselect if={this.type === "Tag"} index={ opts.index } oneanother={opts.oneanother} tagstringchange={ tagnamechange } />
 
 	<selectlist if={this.type === "ListID"} index={ opts.index } oneanother={ opts.oneanother }/>
 	
@@ -344,6 +364,33 @@
 	</script>
 </joblistselect>
 
+<tagstringselect>
+	<select id="select" class="list-select" onChange={changetag}>
+		<option selected disabled></option>
+		<option each={tag in tagstring} value={tag}>{tag}</option>
+	</select>
+	
+	<script>
+		var self = this
+	
+		self.tagstring=[]
+		
+		RiotControl.on('tagstring_changed', (tagstring)=>{
+			self.tagstring = tagstring
+			self.update()
+		})
+		
+		changetag(obj) {
+			if(opts.oneanother==="one") {
+				RiotControl.trigger('query_change_jobs_job_listone_tag', opts.index, obj.target.value)
+			} else if (opts.oneanother==="another") {
+				RiotControl.trigger('query_change_jobs_job_listanother_tag', opts.index, obj.target.value)
+			}
+		}
+		
+	</script>
+</tagstringselect>
+
 <joblistresult>
 	<div style="display:inline-flex">
 		<form onchange={ this.change }>
@@ -367,20 +414,29 @@
 	<!-- loginしているユーザーリストに変えるべき -->
 		<selectlist if={this.type==="UpdateSave"} changelistid={UpdateSave} />
 	
-	<div if={this.type==="NotSave"}>
-		Tag:<input  onchange={NotSave}>
+	<div if={this.type==="NotSave"} class="form-group {has}">
+		Tag:<input class="form-control" oninput={NotSave}>
 	</div>
 	</div>
 	
 	<script>
 		var self = this
 	
-		this.type="NewSave";
+		this.type="NewSave"
 		change(e) {
-			this.type = e.target.value;
-			this.update();
+			this.type = e.target.value
+			this.update()
 		}
 		
+		self.tagstring=[]
+		
+		RiotControl.on('tagstring_changed', (tagstring)=>{
+			self.tagstring = tagstring
+			self.update()
+		})
+
+		self.has="has-error"
+		self.notsavetag=""
 		
 		self.input = ""
 		self.PrivatePubric = false
@@ -399,8 +455,24 @@
 		}
 		
 		NotSave(e) {
-			RiotControl.trigger('query_change_jobs_job_NotSave', opts.index, e.target.value)
+			if(e.target.value!=="" && self.tagstring.indexOf(e.target.value) === -1){
+				RiotControl.trigger('query_tagstring_del', self.notsavetag)
+				self.notsavetag=e.target.value
+				RiotControl.trigger('query_tagstring_add', e.target.value)
+				RiotControl.trigger('query_change_jobs_job_NotSave', opts.index, e.target.value)
+				this.has = "has-success"
+			} else {
+				this.has = "has-error"
+			}
 		}
+		
+		this.on('mount', ()=>{
+			RiotControl.trigger('query_init')
+		})
+		
+		this.on('unmount', ()=>{
+			RiotControl.trigger('query_tagstring_del', self.notsavetag)
+		})
 		
 	</script>
 </joblistresult>
@@ -416,31 +488,30 @@
 	
 	<script>
 		fetch_user_lists(obj){
-			screen_name = obj.target.value;
+			screen_name = obj.target.value
 			$.post("/api/searchuser",{username:screen_name},function(result){
 				if(result.status==="ok"){
-					this.selectlist = result.data;
+					this.selectlist = result.data
 					for(i in result.data) {
 						RiotControl.trigger('userIdscreenNameMap_change', result.data[i][1], result.data[i][0])
 					}
-					this.update();
+					this.update()
 				}
-			}.bind(this));
-		}.bind(this);
+			}.bind(this))
+		}.bind(this)
 		
 		fetch_lists(obj) {
-			userid = obj.target.value;
+			userid = obj.target.value
 			$.post("/api/userlist",{userid:userid},function(result){
 				if(result.status==="ok"){
-					this.listlist = result.data;
+					this.listlist = result.data
 					for(i in result.data) {
 						RiotControl.trigger('listIdNameMap_change', result.data[i][1], result.data[i][0])
 					}
-					this.update();
+					this.update()
 				}
-			}.bind(this));
-			console.log(this.listlist)
-		}.bind(this);
+			}.bind(this))
+		}.bind(this)
 		
 		changelistid(obj) {
 			if(opts.oneanother==="one"){
@@ -468,7 +539,6 @@
 		
 		RiotControl.on('query_submited', (query)=>{
 			$.post("/api/query",{query:JSON.stringify(query)},function(result){
-				console.log(status)
 				status=result.status
 				this.update()
 			}.bind(this)).fail(()=>{

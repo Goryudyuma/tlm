@@ -10,6 +10,8 @@ function QueryStore() {
 		},
 		jobs:[
 		],
+		tagstring:[
+		],
 		regularflag:false,
 	}
 	
@@ -17,6 +19,7 @@ function QueryStore() {
 		self.trigger('adlib_changed', self.query.preparation.adlib)
 		self.trigger('jobs_changed', self.query.jobs)
 		self.trigger('follower_changed', self.query.preparation.follower)
+		self.trigger('tagstring_changed', self.query.tagstring)
 	})
 	
 	self.on('query_export', ()=>{
@@ -137,8 +140,18 @@ function QueryStore() {
 		self.trigger('jobs_changed', self.query.jobs)
 	})
 	
+	self.on('query_tagstring_add', (tagstring, prev)=>{
+		self.query.tagstring.push(tagstring)
+		self.trigger('tagstring_changed', self.query.tagstring)
+	})
 	
-	
+	self.on('query_tagstring_del', (tagstring) =>{
+		if(tagstring!==""){
+			self.query.tagstring.splice(self.query.tagstring.indexOf(tagstring), 1)
+			self.trigger('tagstring_changed', self.query.tagstring)
+		}
+	})
+		
 	self.userIdscreenNameMap={}
 	
 	self.on('userIdscreenNameMap_change', (user_id, screen_name)=>{
