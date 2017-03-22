@@ -41,7 +41,7 @@ func (v Job) dojob(clients map[user.UserID]*twtr.Client, result, origin *map[lis
 				}
 
 				client := clients[user.UserID(0)]
-				createlist, err := client.CreateList(&twtr.Values{
+				createlist, _, err := client.CreateList(&twtr.Params{
 					"name": v.Config.Name,
 					"mode": mode,
 				})

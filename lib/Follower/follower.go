@@ -9,7 +9,7 @@ import (
 
 func (f Follower) GetFollowerIDs(client *twtr.Client) (user.UserIDs, error) {
 	userID := f.UserID
-	resp, err := client.GetFollowerIDs(&twtr.Values{"user_id": strconv.FormatInt(int64(userID), 10)})
+	resp, _, err := client.GetFollowerIDs(&twtr.Params{"user_id": strconv.FormatInt(int64(userID), 10)})
 	if err != nil {
 		return nil, err
 	}
@@ -18,7 +18,7 @@ func (f Follower) GetFollowerIDs(client *twtr.Client) (user.UserIDs, error) {
 		ret = append(ret, user.UserID(v))
 	}
 	for resp.Cursor.NextCursor != 0 {
-		resp, err = client.GetFollowerIDs((&twtr.Values{"user_id": strconv.FormatInt(int64(userID), 10)}).AddNextCursor(resp.Cursor))
+		resp, _, err = client.GetFollowerIDs((&twtr.Params{"user_id": strconv.FormatInt(int64(userID), 10)}).AddNextCursor(resp.Cursor))
 		if err != nil {
 			return nil, err
 		}

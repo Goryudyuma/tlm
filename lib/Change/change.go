@@ -21,7 +21,7 @@ func (change Changes) Commit(client *twtr.Client) error {
 	for id, v := range change {
 		i := 0
 		for {
-			_, err := client.GetList(&twtr.Values{
+			_, _, err := client.GetList(&twtr.Params{
 				"list_id": strconv.FormatInt(int64(id), 10),
 			})
 			if err != nil {
@@ -43,7 +43,7 @@ func (change Changes) Commit(client *twtr.Client) error {
 			}
 			count := 0
 			for count < 10 {
-				_, err := client.DeleteListMembers(&twtr.Values{
+				_, _, err := client.DeleteListMembers(&twtr.Params{
 					"list_id": strconv.FormatInt(int64(id), 10),
 					"user_id": strings.Join(list[:], ","),
 				})
@@ -68,7 +68,7 @@ func (change Changes) Commit(client *twtr.Client) error {
 			}
 			count := 0
 			for count < 10 {
-				_, err := client.AddListMembers(&twtr.Values{
+				_, _, err := client.AddListMembers(&twtr.Params{
 					"list_id": strconv.FormatInt(int64(id), 10),
 					"user_id": strings.Join(list[:], ","),
 				})

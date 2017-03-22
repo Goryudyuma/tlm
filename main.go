@@ -12,7 +12,6 @@ import (
 	u "github.com/Goryudyuma/tlm/lib/User"
 
 	"github.com/bgpat/twtr"
-	"github.com/garyburd/go-oauth/oauth"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
@@ -180,7 +179,7 @@ func getmyid(Token, Secret string) (u.UserID, error) {
 	if err != nil {
 		return u.UserID(0), err
 	}
-	user, err := client.VerifyCredentials(nil)
+	user, _, err := client.VerifyCredentials(nil)
 	if err != nil {
 		return u.UserID(0), err
 	}
@@ -188,10 +187,10 @@ func getmyid(Token, Secret string) (u.UserID, error) {
 }
 
 func createclient(accesstoken, accesstokensecret string) (*twtr.Client, error) {
-	consumer := oauth.Credentials{Token: config.ConsumerKey, Secret: config.ConsumerSecret}
-	token := oauth.Credentials{Token: accesstoken, Secret: accesstokensecret}
+	consumer := twtr.NewCredentials(config.ConsumerKey, config.ConsumerSecret)
+	token := twtr.NewCredentials(accesstoken, accesstokensecret)
 
-	return twtr.NewClient(&consumer, &token), nil
+	return twtr.NewClient(consumer, token), nil
 }
 
 func createclientparse(c *gin.Context) (map[u.UserID]*twtr.Client, error) {
@@ -269,7 +268,7 @@ func query(c *gin.Context) {
 	}
 
 	if jsonquery.Regularflag {
-		myuser, err := client[0].VerifyCredentials(nil)
+		myuser, _, err := client[0].VerifyCredentials(nil)
 		if err != nil {
 			c.JSON(500, gin.H{"status": "error", "data": err.Error()})
 			return
@@ -312,7 +311,7 @@ func searchuser(c *gin.Context) {
 		return
 	}
 
-	users, err := client.SearchUsers(&twtr.Values{
+	users, _, err := client.SearchUsers(&twtr.Params{
 		"q":     username,
 		"count": "100",
 	})
@@ -353,7 +352,7 @@ func userlist(c *gin.Context) {
 		client = clients[u.UserID(0)]
 	}
 
-	lists, err := client.GetLists(&twtr.Values{
+	lists, _, err := client.GetLists(&twtr.Params{
 		"user_id": userid,
 	})
 	if err != nil {
@@ -385,7 +384,7 @@ func getusers(c *gin.Context) {
 
 	client := clients[u.UserID(0)]
 
-	users, err := client.GetUsers(&twtr.Values{
+	users, _, err := client.GetUsers(&twtr.Params{
 		"user_id": userids,
 	})
 	if err != nil {
@@ -405,8 +404,8 @@ func getusers(c *gin.Context) {
 
 func main() {
 	config = loadyaml()
-	consumer := oauth.Credentials{Token: config.ConsumerKey, Secret: config.ConsumerSecret}
-	clientmain = twtr.NewClient(&consumer, nil)
+	consumer := twtr.NewCredentials(config.ConsumerKey, config.ConsumerSecret)
+	clientmain = twtr.NewClient(consumer, nil)
 
 	var database database.Database
 	var err error
@@ -419,7 +418,7 @@ func main() {
 
 	_ = clientmain
 	r := gin.Default()
-	r.LoadHTMLGlob("content/index.html")
+	//r.LoadHTMLGlob("content/index.html")
 
 	store := sessions.NewCookieStore([]byte(config.SeedString))
 	//store.Options(sessions.Options{Secure: true})
